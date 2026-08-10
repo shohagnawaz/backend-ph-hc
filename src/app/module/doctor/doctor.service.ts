@@ -45,7 +45,7 @@ const updateDoctor = async (id: string, payload: IUpdateDoctorPayload) => {
     });
 
     if (!doctorExists) {
-        thow new Error("Doctor not found");
+        throw new Error("Doctor not found");
     }
 
     const updateDoctor = await prisma.doctor.update({
@@ -66,10 +66,51 @@ const updateDoctor = async (id: string, payload: IUpdateDoctorPayload) => {
     return updateDoctor
 };
 
-const deleteDoctor = async () => {};
+const deleteDoctor = async (id: string) => {
+    const doctorExists = await prisma.doctor.findUnique({
+        where: {
+            id
+        }
+    });
+
+    if (!doctorExists) {
+        throw new Error("Doctor not found")
+    }
+
+    if (doctorExists.isDeleted) {
+        throw new Error("Doctor is already deleted");
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+        const deleteDoctor = await tx.doctor.update({
+            where: {
+                id
+            },
+            data: {
+                isDeleted: true,
+                deletedAt: new Date()
+            }
+        });
+
+        await tx.user.update({
+            where: {
+                id: doctorExists.userId
+            },
+            data: {
+                isDeleted: true,
+                deletedAt: new Date()
+            }
+        });
+
+        return deleteDoctor;
+    });
+
+    return result;
+};
 
 export const DoctorService = {
     getAllDoctors,
     getDoctorById,
-    updateDoctor
+    updateDoctor,
+    deleteDoctor
 };
