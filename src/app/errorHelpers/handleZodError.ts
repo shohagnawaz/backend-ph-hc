@@ -1,5 +1,5 @@
-import status from "http-status"
-import z, { success } from "zod";
+import status from "http-status";
+import z from "zod";
 import { TErrorSources } from "../interfaces/error.interfaces";
 
 export const handleZodError = (err: z.ZodError) => {
@@ -15,6 +15,7 @@ export const handleZodError = (err: z.ZodError) => {
     });
 
     return {
+        statusCode,
         success: false,
         message,
         errorSources
