@@ -1,7 +1,7 @@
 import { User, UserStatus } from "../../../generated/prisma/client";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";
-import { tokenUtlis } from "../../utils/token";
+import { tokenUtils } from "../../utils/token";
 
 interface IRegisterPatientPayload {
     name: string,
@@ -40,7 +40,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
             return patientTx;
         });
 
-        const accessToken = tokenUtlis.getAccessToken({
+        const accessToken = tokenUtils.getAccessToken({
             userId: data.user.id,
             role: data.user.role,
             name: data.user.name,
@@ -50,7 +50,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
             emailVerified: data.user.emailVerified
         });
 
-        const refreshToken = tokenUtlis.getRefreshToken({
+        const refreshToken = tokenUtils.getRefreshToken({
             userId: data.user.id,
             role: data.user.role,
             name: data.user.name,
@@ -101,7 +101,7 @@ const loginUser = async (payload: ILogingUserPayload) => {
         throw new Error("User is deleted")
     }
 
-    const accessToken = tokenUtlis.getAccessToken({
+    const accessToken = tokenUtils.getAccessToken({
         userId: data.user.id,
         role: data.user.role,
         name: data.user.name,
@@ -111,7 +111,7 @@ const loginUser = async (payload: ILogingUserPayload) => {
         emailVerified: data.user.emailVerified
     });
 
-    const refreshToken = tokenUtlis.getRefreshToken({
+    const refreshToken = tokenUtils.getRefreshToken({
         userId: data.user.id,
         role: data.user.role,
         name: data.user.name,

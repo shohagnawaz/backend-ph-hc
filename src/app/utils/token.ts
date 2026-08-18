@@ -1,9 +1,9 @@
 import { JwtPayload, SignOptions } from "jsonwebtoken";
 import { jwtUtils } from "./jwt";
 import { envVars } from "../../config/env";
-import { CookieUtlis } from "./cookie";
+import { CookieUtils } from "./cookie";
 import { Response } from "express";
-import ms from "ms";
+import ms, { StringValue } from "ms";
 
 // Create access token
 const getAccessToken = (payload: JwtPayload) => {
@@ -26,40 +26,40 @@ const getRefreshToken = (payload: JwtPayload) => {
     return refreshToken;
 };
 
-const setAccessTokenCookie = (res: Response, token: string) => {
-    const maxAge = ms(Number(envVars.ACCESS_TOKEN_EXPIRES_IN));
-    CookieUtlis.setCookie(res, "accessToken", token, {
+const setAccessTokenCookie = (res: Response, token: string) => {    
+    CookieUtils.setCookie(res, "accessToken", token, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
         path: "/",
-        maxAge: Number(maxAge)
+        // 1 day
+        maxAge: 60 * 60 * 60 * 24
     });
 };
 
 const setRefreshTokenCookie = (res: Response, token: string) => {
-    const maxAge = ms(Number(envVars.REFRESH_TOKEN_EXPIRES_IN));
-    CookieUtlis.setCookie(res, "refreshToken", token, {
+    CookieUtils.setCookie(res, "refreshToken", token, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
         path: "/",
-        maxAge: Number(maxAge)
+        // 7 day
+        maxAge: 60 * 60 * 60 * 24 * 7
     });
 };
 
 const setBetterAuthSessionCookie = (res: Response, token: string) => {
-    const maxAge = ms(Number(envVars.REFRESH_TOKEN_EXPIRES_IN));
-    CookieUtlis.setCookie(res, "better-auth.session_token", token, {
+    CookieUtils.setCookie(res, "better-auth.session_token", token, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
         path: "/",
-        maxAge: Number(maxAge)
+        // 1 day
+        maxAge: 60 * 60 * 60 * 24
     });
 };
 
-export const tokenUtlis = {
+export const tokenUtils = {
     getAccessToken,
     getRefreshToken,
     setAccessTokenCookie,
