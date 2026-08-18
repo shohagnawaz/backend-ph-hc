@@ -2,8 +2,6 @@ import { betterAuth } from "better-auth";
 import { prisma } from "./prisma";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { Role, UserStatus } from "../../generated/prisma/enums";
-import ms, { StringValue } from "ms";
-import { envVars } from "../../config/env";
 // If your Prisma file is located elsewhere, you can change the path
 
 export const auth = betterAuth({
