@@ -10,16 +10,16 @@ import { envVars } from "../../config/env";
 export const checkAuth = (...authRoles: Role[]) => async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Session token verification
-        const sesseionToken = CookieUtils.getCookie(req, "better-auth.session_token");
+        const sessionToken = CookieUtils.getCookie(req, "better-auth.session_token");
 
-        if (!sesseionToken) {
+        if (!sessionToken) {
             throw new Error("Unauthorized access! No session token provided.");
         }
         
-        if (sesseionToken) {
+        if (sessionToken) {
             const sessionExists = await prisma.session.findFirst({
                 where: {
-                    token: sesseionToken,
+                    token: sessionToken,
                     expiresAt: {
                         gt: new Date(),
                     }
