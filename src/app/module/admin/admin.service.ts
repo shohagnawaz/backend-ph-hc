@@ -55,6 +55,9 @@ const updateAdmin = async (id: string, payload: IUpdateAdminPayload) => {
 
 //soft delete admin user by setting isDeleted to true and also delete the user session and account
 const deleteAdmin = async (id: string, user: IRequestUser) => {
+
+    //validate self deleting
+
     const isAdminExist = await prisma.admin.findUnique({
         where: {
             id

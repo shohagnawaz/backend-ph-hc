@@ -7,4 +7,7 @@ import tseslint from 'typescript-eslint';
 export default defineConfig({
   files: ['**/*.{js,ts}'],
   extends: [js.configs.recommended, tseslint.configs.recommended],
+  rules: {
+    'no-constant-binary-expression': 'error',
+  },
 });
