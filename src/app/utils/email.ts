@@ -1,5 +1,9 @@
 import nodemailer from "nodemailer";
 import { envVars } from "../config/env";
+import AppError from "../errorHelpers/AppError";
+import status from "http-status";
+import path from "path";
+import ejs from "ejs";
 
 const transporter = nodemailer.createTransport({
     host: envVars.EMAIL_SENDER.SMTP_HOST,
@@ -12,9 +16,36 @@ const transporter = nodemailer.createTransport({
 });
 
 interface sendEmailOptions {
-    to: String,
-    message: String,
-    html: String
+    to: string;
+    subject: string;
+    templateName: string;
+    templateData: Record<string, any>;
+    attachments?: {
+        filename: string;
+        content: Buffer | string;
+        contentType: string
+    } []
 }
 
-export const sendEmail = async (payload) => {}
+export const sendEmail = async ({subject, templateData, templateName, to, attachments} : sendEmailOptions) => {
+    
+    try {
+        const templatePath = path.resolve(process.cwd(), `src/app/templates/${templateName}.ejs`);
+        const html = await ejs.renderFile(templatePath, templateData);
+        const info = await transporter.sendMail({
+            from: envVars.EMAIL_SENDER.SMTP_FROM,
+            to: to,
+            html: html,
+            attachments: attachments?.map((attachment) => ({
+                filename: attachment.filename,
+                content: attachment.content,
+                contentType: attachment.contentType
+            }))
+        })
+        console.log(`Email send to ${to} : ${info.messageId}`);
+    }
+    catch (error: any) {
+        console.log("Email Sending Error", error.message);
+        throw new AppError(status.INTERNAL_SERVER_ERROR, "Failed to send email");
+    }
+}
