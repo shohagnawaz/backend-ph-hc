@@ -35,6 +35,7 @@ export const sendEmail = async ({subject, templateData, templateName, to, attach
         const info = await transporter.sendMail({
             from: envVars.EMAIL_SENDER.SMTP_FROM,
             to: to,
+            subject: subject,
             html: html,
             attachments: attachments?.map((attachment) => ({
                 filename: attachment.filename,

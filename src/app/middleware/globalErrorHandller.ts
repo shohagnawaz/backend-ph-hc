@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { envVars } from "../../config/env";
+import { envVars } from "../config/env";
 import status from "http-status";
 import z from "zod";
 import { TErrorResponse, TErrorSources } from "../interfaces/error.interfaces";

@@ -5,9 +5,12 @@ import { Role, UserStatus } from "../../generated/prisma/enums";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { sendEmail } from "../utils/email";
 import { name } from "ejs";
+import { envVars } from "../config/env";
 // If your Prisma file is located elsewhere, you can change the path
 
 export const auth = betterAuth({
+    baseURL: envVars.BETTER_AUTH_URL,
+    secret: envVars.BETTER_AUTH_SECRET,
     database: prismaAdapter(prisma, {
         provider: "postgresql", // or "mysql", "postgresql", ...etc
     }),
@@ -15,6 +18,24 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: true
+    },
+
+    socialProviders: {
+        google: {
+            clientId: envVars.GOOGLE_CLIENT_ID,
+            clientSecret: envVars.GOOGLE_CLIENT_SECRET,
+            
+            mapProfileToUser: () => {
+                return {
+                    role: Role.PATIENT,
+                    status: UserStatus.ACTIVE,
+                    needPasswordChange: false,
+                    emailVerified: true,
+                    isDeleted: false,
+                    deletedAt: null
+                }
+            },
+        }
     },
 
     emailVerification: {
@@ -80,6 +101,24 @@ export const auth = betterAuth({
                         })
                     }
                 }
+                else if (type === "forget-password") {
+                    const user = await prisma.user.findUnique({
+                        where: {
+                            email
+                        }
+                    })
+                    if (user) {
+                        sendEmail({
+                            to: email,
+                            subject: "Password Reset OTP",
+                            templateName: "otp",
+                            templateData: {
+                                name: user.name,
+                                otp
+                            }
+                        })
+                    }
+                }
             },
             expiresIn: 2 * 60, // 2 minutes
             otpLength: 6,
@@ -98,6 +137,25 @@ export const auth = betterAuth({
     trustedOrigins: [process.env.BETTER_AUTH_URL || "http://localhost:5000"],
 
     advanced: {
-        disableCSRFCheck: true
+        // disableCSRFCheck: true
+        useSecureCookies: false,
+        cookies: {
+            state: {
+                attributes: {
+                    sameSite: "none",
+                    secure: true,
+                    httpOnly: true,
+                    path: "/"
+                }
+            },
+            sessionToken: {
+                attributes: {
+                    sameSite: "none",
+                    secure: true,
+                    httpOnly: true,
+                    path: "/"
+                }
+            }
+        }
     }
 });

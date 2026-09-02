@@ -5,7 +5,7 @@ import { sendResponse } from "../../shared/sendResponse";
 import status from "http-status";
 import { tokenUtils } from "../../utils/token";
 import ms, { StringValue } from "ms";
-import { envVars } from "../../../config/env";
+import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
 import { CookieUtils } from "../../utils/cookie";
 
@@ -163,7 +163,7 @@ const logoutUser = catchAsync(
 const verifyEmail = catchAsync(
     async (req: Request, res: Response) => {
         const { email, otp } = req.body;
-        const result = await AuthService.verifyEmail(email, otp);
+        await AuthService.verifyEmail(email, otp);
 
         sendResponse(res, {
             httpStatusCode: status.OK,
@@ -173,6 +173,44 @@ const verifyEmail = catchAsync(
     }
 );
 
+const forgetPassword = catchAsync(
+    async (req: Request, res: Response) => {
+        const { email } = req.body;
+        await AuthService.forgetPassword(email);
+
+        sendResponse(res, {
+            httpStatusCode: status.OK,
+            success: true,
+            message: "Password reset OTP sent to email successfully"
+        })
+    }
+);
+
+const resetPassword = catchAsync(
+    async (req: Request, res: Response) => {
+        const { email, otp, newPassword } = req.body;
+        await AuthService.resetPassword(email, otp, newPassword);
+
+        sendResponse(res, {
+            httpStatusCode: status.OK,
+            success: true,
+            message: "Password reset successfully"
+        })
+    }
+);
+
+const googleLogin = catchAsync((req: Request, res: Response) => {
+
+});
+
+const googleLoginSuccess = catchAsync((req: Request, res: Response) => {
+
+});
+
+const handleOAuthError = catchAsync((req: Request, res: Response) => {
+
+});
+
 export const AuthController = {
     registerPatient,
     loginUser,
@@ -180,5 +218,10 @@ export const AuthController = {
     getNewToken,
     changePassword,
     logoutUser,
-    verifyEmail
-};
+    verifyEmail,
+    forgetPassword,
+    resetPassword,
+    googleLogin,
+    googleLoginSuccess,
+    handleOAuthError
+}
