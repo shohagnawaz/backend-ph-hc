@@ -18,6 +18,8 @@ const deleteSpecialty = async (id: string): Promise<Specialty> => {
     const specialty = await prisma.specialty.delete({
         where: {id}
     });
+
+    return specialty;
 };
 
 const patchSpecialty = async (id: string, payload: Partial<{title: string}>) => {
