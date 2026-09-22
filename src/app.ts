@@ -37,13 +37,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1", IndexRoutes);
 
-import { cloudinaryUpload } from "./app/config/cloudinary.config"; // আপনার আসল ফোল্ডার স্ট্রাকচার অনুযায়ী path ঠিক করে নিন
-
-// It is just test purpose
-cloudinaryUpload.api.ping()
-    .then((res) => console.log("✅ Cloudinary connected:", res))
-    .catch((err) => console.error("❌ Cloudinary connection failed:", err));
-
 // Basic route
 app.get('/', async (req: Request, res: Response) => {
 
