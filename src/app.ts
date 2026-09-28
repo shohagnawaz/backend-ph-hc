@@ -12,9 +12,11 @@ import { auth } from "./app/lib/auth";
 import path from "path";
 import cors from "cors";
 import { envVars } from "./app/config/env";
+import qs from "qs";
 
 const app : Application = express();
 
+app.set("query parser", () => qs);
 app.set("view engine", "ejs");
 app.set("views", path.resolve(process.cwd(), `src/app/templates`));
 
@@ -39,14 +41,10 @@ app.use("/api/v1", IndexRoutes);
 
 // Basic route
 app.get('/', async (req: Request, res: Response) => {
-
-  throw new AppError(status.BAD_REQUEST, "Just testing error handler");
-
-  res.status(201).json({
-    success: true,
-    message: "API is working",
-    data: specialty
-  });
+    res.status(201).json({
+        success: true,
+        message: 'API is working',
+    })
 });
 
 app.use(globalErrorHandler);
