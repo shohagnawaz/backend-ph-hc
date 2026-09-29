@@ -1,7 +1,11 @@
 import { addHours, addMinutes, format } from "date-fns";
-import { ICreateSchedulePayload } from "./schedule.interface";
+import { ICreateSchedulePayload, IUpdateSchedulePayload } from "./schedule.interface";
 import { convertDateTime } from "./schedule.utlis";
 import { prisma } from "../../lib/prisma";
+import { IQueryParams } from "../../interfaces/query.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { Prisma, Schedule } from "../../../generated/prisma/client";
+import { scheduleFilterableFields, ScheduleIncludeConfig, scheduleSearchableFields } from "./schedule.constant";
 
 const createSchedule = async (payload: ICreateSchedulePayload) => {
     const { startDate, endDate, startTime, endTime } = payload;
@@ -65,15 +69,38 @@ const createSchedule = async (payload: ICreateSchedulePayload) => {
 
 };
 
-const getAllSchedules = async () => {
+const getAllSchedules = async (query: IQueryParams) => {
+    const queryBuilder = new QueryBuilder<Schedule, Prisma.ScheduleWhereInput, Prisma.ScheduleInclude>(
+        prisma.schedule,
+        query,
+        {
+            searchableFields: scheduleSearchableFields,
+            filterableFields: scheduleFilterableFields
+        }
+    );
     
+    const result = await queryBuilder
+    .search()
+    .filter()
+    .paginate()
+    .dynamicInclude(ScheduleIncludeConfig)
+    .sort()
+    .fields()
+    .execute()
+
+    return result;
 };
 
-const getScheduleById = async () => {
-
+const getScheduleById = async (id: string) => {
+    const schedule = await prisma.schedule.findUnique({
+        where: {
+            id: id
+        }
+    });
+    return schedule;
 };
 
-const updateSchedule = async () => {
+const updateSchedule = async (id: string, payload: IUpdateSchedulePayload) => {
 
 };
 
