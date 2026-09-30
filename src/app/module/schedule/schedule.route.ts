@@ -12,14 +12,21 @@ router.post("/",
     validateRequest(ScheduleValidation.createScheduleZodSchema), ScheduleController.createSchedule
 );
 router.get("/", 
-    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR)
+    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR),
+    ScheduleController.getAllSchedules
 );
 router.get("/:id", 
-    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR)
+    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR),
+    ScheduleController.getScheduleById
 );
 router.patch("/:id",
-    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR)
+    checkAuth(Role.ADMIN, Role.SUPER_ADMIN, Role.DOCTOR),
+    validateRequest(ScheduleValidation.updateScheduleZodSchema),
+    ScheduleController.updateSchedule
 );
-router.delete("/");
+router.delete("/:id",
+    checkAuth(Role.ADMIN, Role.SUPER_ADMIN),
+    ScheduleController.deleteSchedule 
+);
 
 export const scheduleRouter = router;
