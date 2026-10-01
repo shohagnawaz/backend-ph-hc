@@ -4,7 +4,7 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { IBookAppointmentPayload } from "./appointment.interface";
 import { envVars } from "../../config/env";
-import { AppointmentStatus, Role } from "../../../generated/prisma/enums";
+import { AppointmentStatus, PaymentStatus, Role } from "../../../generated/prisma/enums";
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 
@@ -193,3 +193,259 @@ const changeAppointmentStatus = async (appointmentId: string, appointmentStatus:
         }
     })
 };
+
+// refactoring on include of doctor and patient data in appointment details, we can use query builder to get the data in single query instead of multiple queries in case of doctor and patient both
+const getMySingleAppointment = async (appointmentId: string, user: IRequestUser) => {
+    const patientData = await prisma.patient.findUnique({
+        where: {
+            email: user?.email
+        }
+    });
+
+    const doctorData = await prisma.doctor.findUnique({
+        where: {
+            email: user?.email
+        }
+    });
+
+    let appointment;
+    if (patientData) {
+        appointment = await prisma.appointment.findFirst({
+            where: {
+                id: appointmentId,
+                patientId: patientData.id
+            },
+            include: {
+                doctor: true,
+                schedule: true
+            }
+        })
+    }
+    else if (doctorData) {
+        appointment = await prisma.appointment.findFirst({
+            where: {
+                id: appointmentId,
+                doctorId: doctorData.id
+            },
+            include: {
+                patient: true,
+                schedule: true,
+            }
+        })
+    }
+    if (!appointment) {
+        throw new AppError(status.NOT_FOUND, "Appointment not found");
+    };
+
+    return appointment;
+};
+
+// integrate query builder
+const getAllAppointments = async () => {
+    const appointments = await prisma.appointment.findMany({
+        include: {
+            doctor: true,
+            patient: true,
+            schedule: true,
+        }
+    });
+    
+    return appointments;
+};
+
+const bookAppointmentWithPayLater = async (payload: IBookAppointmentPayload, user: IRequestUser) => {
+    const patientData = await prisma.patient.findFirstOrThrow({
+        where: {
+            email: user.email
+        }
+    });
+
+    const doctorData = await prisma.doctor.findFirstOrThrow({
+        where: {
+            id: payload.doctorId,
+            isDeleted: false
+        }
+    });
+
+    const scheduleData = await prisma.schedule.findFirstOrThrow({
+        where: {
+            id: payload.scheduleId
+        }
+    });
+
+    const doctorSchedule = await prisma.doctorSchedules.findFirstOrThrow({
+        where: {
+            doctorId_scheduleId: {
+                doctorId: doctorData.id,
+                scheduleId: scheduleData.id
+            }
+        }
+    });
+
+    const videoCallingId = String(uuidv7());
+
+    const result = await prisma.$transaction(async (tx) => {
+        const appointmentData = await tx.appointment.create({
+            data: {
+                doctorId: payload.doctorId,
+                patientId: patientData.id,
+                scheduleId: doctorSchedule.scheduledId,
+                videoCallingId
+            }
+        });
+
+        await tx.doctorSchedules.update({
+            where: {
+                doctorId_scheduleId: {
+                    doctorId: payload.doctorId,
+                    scheduleId: payload.scheduleId
+                }
+            },
+            data: {
+                isBooked: true
+            }
+        });
+
+        const transactionId = String(uuidv7());
+
+        const paymentData = await tx.payment.create({
+            data: {
+                appointmentId: appointmentData.id,
+                amount: doctorData.appointmentFee,
+                transactionId
+            }
+        });
+
+        return {
+            appointment: appointmentData,
+            payment: paymentData
+        }
+    });
+
+    return result;
+};
+
+const initiatePayment = async (appointmentId: string, user: IRequestUser) => {
+    const patientData = await prisma.patient.findFirstOrThrow({
+        where: {
+            email: user.email
+        }
+    });
+
+    const appointmentData = await prisma.appointment.findFirstOrThrow({
+        where: {
+            id: appointmentId,
+            patientId: patientData.id,
+        },
+        include: {
+            doctor: true,
+            payment: true
+        }
+    });
+
+    if (!appointmentData) {
+        throw new AppError(status.NOT_FOUND, "Appointment not found");
+    }
+
+    if (!appointmentData.payment) {
+        throw new AppError(status.NOT_FOUND, "Payment data not found for this appointment");
+    }
+
+    if (appointmentData.payment?.status === PaymentStatus.PAID) {
+        throw new AppError(status.BAD_REQUEST, "Payment already completed for this appointment");
+    }
+
+    if (appointmentData.status === AppointmentStatus.CANCELED) {
+        throw new AppError(status.BAD_REQUEST, "Appointment is canceled");
+    }
+
+    const session = await stripe.checkOut.session.create({
+        payment_method_types: ["card"],
+        node: "payment",
+        line_items: [
+            {
+                price_data: {
+                    currency: "bdt",
+                    product_data: {
+                        name: `Appointment with Dr. ${appointmentData.doctor.name}`,
+                    },
+                    unit_amount: appointmentData.doctor.appointmentFee * 100,
+                },
+                quantity: 1
+            }
+        ],
+        metadata: {
+            appointmentId: appointmentData.id,
+            paymentId: appointmentData.payment.id
+        },
+
+        success_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-success?appointment_id=${appointmentData.payment.id}`,
+
+        // cancel_url: `${envVars.FRONTEND_URL}/dashboard/payment/payment-failed`,
+        cancel_url: `${envVars.FRONTEND_URL}/dashboard/appointments?error=payment_cancelled`,
+    });
+
+    return {
+        paymentUrl: session.url
+    }
+};
+
+const cancelUnpaidAppointment = async () => {
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    const unpaindAppointments = await prisma.appointment.findMany({
+        where: {
+            // status: AppointmentStatus.SCHEDULE,
+            createdAt: {
+                lte: thirtyMinutesAgo,
+            },
+            PaymentStatus: PaymentStatus.UNPAID
+        }
+    });
+
+    const appointmentToCancel = unpaindAppointments.map(appointment => appointment.id);
+    await prisma.$transaction(async (tx) => {
+        await tx.appointment.updateMany({
+            where: {
+                id: {
+                    in: appointmentToCancel
+                },
+            },
+            data: {
+                status: AppointmentStatus.CANCELED
+            }
+        });
+
+        await tx.payment.deleteMany({
+            where: {
+                appointmentId: {
+                    in: appointmentToCancel
+                }
+            }
+        });
+
+        for (const unpaindAppointment of unpaindAppointments) {
+            await tx.doctorSchedules.update({
+                where: {
+                    doctorId_scheduleId: {
+                        doctorId: unpaindAppointment.doctorId,
+                        scheduleId: unpaindAppointment.scheduleId
+                    }
+                },
+                data: {
+                    isBooked: false
+                }
+            })
+        }
+    });
+}
+
+export const AppointmentService = {
+    bookAppointment,
+    getMyAppointments,
+    changeAppointmentStatus,
+    getMySingleAppointment,
+    getAllAppointments,
+    bookAppointmentWithPayLater,
+    initiatePayment
+}
