@@ -37,7 +37,7 @@ const changeAppointmentStatus = catchAsync( async (req: Request, res: Response) 
         success: true,
         httpStatusCode: status.OK,
         message: "Appointment status updated successfully",
-        data: updatedAppointment;
+        data: updatedAppointment
     });
 });
 

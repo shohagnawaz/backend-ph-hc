@@ -7,6 +7,7 @@ import { envVars } from "../../config/env";
 import { AppointmentStatus, PaymentStatus, Role } from "../../../generated/prisma/enums";
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
+import { stripe } from "../../config/stripe.config";
 
 const bookAppointment = async (payload : IBookAppointmentPayload, user : IRequestUser) => {
     const patientData = await prisma.doctor.findUniqueOrThrow({
@@ -71,17 +72,17 @@ const bookAppointment = async (payload : IBookAppointmentPayload, user : IReques
             }
         });
 
-        const session = await stripe.checkOut.session.create({
+        const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             mode: "payment",
             line_items : [
                 {
                     price_data: {
                         currency: "bdt",
-                        product_Data: {
+                        product_data: {
                             name : `Appointment with Dr. ${doctorData.name}`,
                         },
-                        unit_amount : doctorData.appointmentFee * 100,
+                        unit_amount : doctorData.appointmentFee * 120,
                     },
                     quantity : 1
                 }
@@ -359,7 +360,7 @@ const initiatePayment = async (appointmentId: string, user: IRequestUser) => {
         throw new AppError(status.BAD_REQUEST, "Appointment is canceled");
     }
 
-    const session = await stripe.checkOut.session.create({
+    const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         node: "payment",
         line_items: [
@@ -393,7 +394,7 @@ const initiatePayment = async (appointmentId: string, user: IRequestUser) => {
 const cancelUnpaidAppointment = async () => {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-    const unpaindAppointments = await prisma.appointment.findMany({
+    const unpaidAppointments = await prisma.appointment.findMany({
         where: {
             // status: AppointmentStatus.SCHEDULE,
             createdAt: {
@@ -403,7 +404,7 @@ const cancelUnpaidAppointment = async () => {
         }
     });
 
-    const appointmentToCancel = unpaindAppointments.map(appointment => appointment.id);
+    const appointmentToCancel = unpaidAppointments.map(appointment => appointment.id);
     await prisma.$transaction(async (tx) => {
         await tx.appointment.updateMany({
             where: {
@@ -424,12 +425,12 @@ const cancelUnpaidAppointment = async () => {
             }
         });
 
-        for (const unpaindAppointment of unpaindAppointments) {
+        for (const unpaidAppointment of unpaidAppointments) {
             await tx.doctorSchedules.update({
                 where: {
                     doctorId_scheduleId: {
-                        doctorId: unpaindAppointment.doctorId,
-                        scheduleId: unpaindAppointment.scheduleId
+                        doctorId: unpaidAppointment.doctorId,
+                        scheduleId: unpaidAppointment.scheduleId
                     }
                 },
                 data: {
