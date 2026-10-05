@@ -82,7 +82,7 @@ const bookAppointment = async (payload : IBookAppointmentPayload, user : IReques
                         product_data: {
                             name : `Appointment with Dr. ${doctorData.name}`,
                         },
-                        unit_amount : doctorData.appointmentFee * 120,
+                        unit_amount : doctorData.appointmentFee * 100,
                     },
                     quantity : 1
                 }
@@ -391,7 +391,7 @@ const initiatePayment = async (appointmentId: string, user: IRequestUser) => {
     }
 };
 
-const cancelUnpaidAppointment = async () => {
+const cancelUnpaidAppointments = async () => {
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
     const unpaidAppointments = await prisma.appointment.findMany({
@@ -448,5 +448,6 @@ export const AppointmentService = {
     getMySingleAppointment,
     getAllAppointments,
     bookAppointmentWithPayLater,
-    initiatePayment
+    initiatePayment,
+    cancelUnpaidAppointments
 }
