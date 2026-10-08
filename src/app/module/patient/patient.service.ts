@@ -1,9 +1,13 @@
+import { deleteFileFromCloudinary } from "../../config/cloudinary.config";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { IUpdatePatientHealthDataPayload, IUpdatePatientProfilePayload } from "./patient.interface";
 import { convertToDateTime } from "./patient.utils";
 
 const updateMyProfile = async (user: IRequestUser, payload: IUpdatePatientProfilePayload) => {
+
+    throw new Error("This is an intentional error to test Sentry integration in the backend.")
+
     const patientData = await prisma.patient.findFirstOrThrow({
         where: {
             email: user.email
@@ -68,11 +72,15 @@ const updateMyProfile = async (user: IRequestUser, payload: IUpdatePatientProfil
         if (payload.medicalReports && Array.isArray(payload.medicalReports) && payload.medicalReports.length > 0) {
             for (const report of payload.medicalReports) {
                 if (report.shouldDelete && report.reportId) {
-                    await tx.medicalReport.delete({
+                    const deletedReport = await tx.medicalReport.delete({
                         where: {
                             id: report.reportId
                         }
-                    })
+                    });
+
+                    if (deletedReport.reportLink) {
+                        await deleteFileFromCloudinary(deletedReport.reportLink)
+                    }
                 }
                 else if (report.reportName && report.reportName) {
                     await tx.medicalReport.create({

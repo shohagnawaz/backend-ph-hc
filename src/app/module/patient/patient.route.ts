@@ -19,3 +19,5 @@ router.patch("/update-my-profile",
     validateRequest(PatientValidation.updatePatientProfileZodSchema),
     PatientController.updateMyProfile
 );
+
+export const PatientsRoute = router;

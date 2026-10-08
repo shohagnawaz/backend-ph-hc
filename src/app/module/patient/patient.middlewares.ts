@@ -2,6 +2,10 @@ import { NextFunction, Request, Response } from "express";
 import { IUpdatePatientInfoPayload, IUpdatePatientProfilePayload } from "./patient.interface";
 
 export const updateMyPatientProfileMiddleware = (req: Request, res: Response, next: NextFunction) => {
+    if (req.body.data) {
+        req.body = JSON.parse(req.body.data)
+    }
+
     const payload: IUpdatePatientProfilePayload = req.body;
     const files = req.files as { [fieldName: string]: Express.Multer.File[] | undefined };
 
