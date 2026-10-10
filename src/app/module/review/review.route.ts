@@ -7,7 +7,10 @@ import { ReviewController } from "./review.controller";
 
 const router = Router();
 
-router.get("/", ReviewController.getAllReviews);
+router.get("/",
+    checkAuth(Role.PATIENT), 
+    ReviewController.getAllReviews
+);
 
 router.post("/", 
     checkAuth(Role.PATIENT),
@@ -30,3 +33,5 @@ router.delete("/:id",
     checkAuth(Role.PATIENT),
     ReviewController.deleteReview
 );
+
+export const reviewRouter = router;
