@@ -12,7 +12,7 @@ router.get("/",
 );
 
 router.get("/my-prescriptions",
-    checkAuth(Role.PATIENT),
+    checkAuth(Role.PATIENT, Role.DOCTOR),
     PrescriptionController.myPrescriptions
 );
 
