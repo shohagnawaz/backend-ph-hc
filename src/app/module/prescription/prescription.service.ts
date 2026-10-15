@@ -4,8 +4,10 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { ICreatePrescriptionPayload } from "./prescription.interface";
 import { Role } from "../../../generated/prisma/enums";
+import { generatePrescriptionPDF } from "./prescription.utils";
+import { uploadFileToCloudinary } from "../../config/cloudinary.config";
 
-const givePrescription = async (user : IRequestUser, payload : ICreatePrescriptionPayload) => {
+const givePrescription = async (user: IRequestUser, payload: ICreatePrescriptionPayload) => {
     const doctorData = await prisma.doctor.findFirstOrThrow({
         where: {
             email: user?.email
@@ -15,16 +17,24 @@ const givePrescription = async (user : IRequestUser, payload : ICreatePrescripti
     const appointmentData = await prisma.appointment.findFirstOrThrow({
         where: {
             id: payload.appointmentId
+        },
+        include: {
+            patient: true,
+            schedule: {
+                include: {
+                    doctorSchedules: true
+                }
+            }
         }
     });
 
     if (appointmentData.doctorId !== doctorData.id) {
         throw new AppError(status.BAD_REQUEST, "You can only give prescription for your own appointments");
     }
-    
+
     const isAlreadyPrescribed = await prisma.prescription.findFirst({
         where: {
-            appointmentId : payload.appointmentId
+            appointmentId: payload.appointmentId
         }
     });
 
@@ -34,15 +44,44 @@ const givePrescription = async (user : IRequestUser, payload : ICreatePrescripti
 
     const followUpDate = new Date(payload.followUpDate);
 
-    const result = await prisma.prescription.create({
-        data: {
-            ...payload,
-            followUpDate,
-            doctorId: appointmentData.doctorId,
-            patientId: appointmentData.patientId
-        }
-    });
+    const result = await prisma.$transaction(async (tx) => {
+        const result = await tx.prescription.create({
+            data: {
+                ...payload,
+                followUpDate,
+                doctorId: appointmentData.doctorId,
+                patientId: appointmentData.patientId
+            }
+        });
 
+        const pdfBuffer = await generatePrescriptionPDF({
+            doctorName: doctorData.name,
+            patientName: appointmentData.patient.name,
+            appointmentDate: appointmentData.schedule.startDateTime,
+            instructions: payload.instructions,
+            followUpDate,
+            doctorEmail: doctorData.email,
+            patientEmail: appointmentData.patient.email,
+            prescriptionId: result.id,
+            createdAt: new Date()
+        });
+
+        const fileName = `prescription-${Date.now()}.pdf`;
+        const uploadedFile = await uploadFileToCloudinary(pdfBuffer, fileName);
+        const pdfUrl = uploadedFile.secure_url;
+
+        const updatedPrescription = await tx.prescription.update({
+            where: {
+                id: result.id
+            },
+            data: {
+                pdfUrl
+            }
+        });
+
+        return updatedPrescription;
+    });
+    
     return result;
 };
 
@@ -69,7 +108,7 @@ const myPrescriptions = async (user: IRequestUser) => {
                 doctor: true,
                 appointment: true
             }
-        }); 
+        });
         return prescriptions;
     }
 
@@ -102,9 +141,9 @@ const getAllPrescriptions = async () => {
     return result;
 };
 
-const updatePrescription = async () => {};
+const updatePrescription = async () => { };
 
-const deletePrescription = async () => {};
+const deletePrescription = async () => { };
 
 export const PrescriptionService = {
     givePrescription,

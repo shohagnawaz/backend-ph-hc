@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { envVars } from "../../config/env";
 
 interface PrescriptionData {
     doctorName: string;
@@ -117,11 +118,30 @@ export const generatePrescriptionPDF = async (prescriptionData : PrescriptionDat
             doc.fontSize(10).font("Helvetica");
 
             // Wrap text for long instruction
-
             doc.text(prescriptionData.instructions, {
-
+                align: "left",
+                width: 445
             });
+
+            doc.moveDown(1);
+
+            // Footer
+            doc.fontSize(9).font("Helvetica").text(
+                "This is an electronically generated prescription. Please follow all instructions provided by your doctor.",
+                {
+                    align: "center"
+                }
+            );
+
+            doc.text(`For more information, visit: ${envVars.FRONTEND_URL}`, {
+                align: "center"
+            });
+
+            // End the document
+            doc.end();
         }
-        catch (error) {}
+        catch (error) {
+            reject(error);
+        }
     });
 };
