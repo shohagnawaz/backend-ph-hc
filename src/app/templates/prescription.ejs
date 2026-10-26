@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Prescription</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height:1.6; color:#333333;">
+
+  <!-- Preheader (hidden preview text) -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+    Your prescription from Dr. <%= doctorName %> is ready.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f5f5; padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:8px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color:#0f766e; padding:28px 30px;">
+              <h1 style="margin:0 0 4px; font-size:26px; color:#ffffff;">Prescription</h1>
+              <p style="margin:0; font-size:13px; color:#ccfbf1;">PH Healthcare Services - Your Health, Our Priority</p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:28px 30px 10px; font-size:15px;">
+              <p style="margin:0;">Dear <strong><%= patientName %></strong>,</p>
+              <p style="margin:10px 0 0;">Your prescription has been issued. Please review the details below.</p>
+            </td>
+          </tr>
+
+          <!-- Prescription Info -->
+          <tr>
+            <td style="padding:16px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb; border:1px solid #e5e7eb; border-radius:6px;">
+                <tr>
+                  <td style="padding:16px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;">
+                      <tr>
+                        <td width="40%" style="padding:6px 0; color:#6b7280;">Prescription No.</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;">#<%= prescriptionId %></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Date Issued</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= issueDate %></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Patient</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= patientName %></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280; vertical-align:top;">Doctor</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;">
+                          Dr. <%= doctorName %>
+                          <% if (locals.doctorSpecialization) { %>
+                            <br><span style="font-weight:normal; font-size:12px; color:#6b7280;"><%= doctorSpecialization %></span>
+                          <% } %>
+                        </td>
+                      </tr>
+                      <% if (locals.diagnosis) { %>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Diagnosis</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= diagnosis %></td>
+                      </tr>
+                      <% } %>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Medications -->
+          <tr>
+            <td style="padding:10px 30px;">
+              <h2 style="margin:0 0 10px; padding-bottom:6px; font-size:16px; color:#0f766e; border-bottom:2px solid #0f766e;">Prescribed Medications</h2>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; font-size:13px;">
+                <tr style="background-color:#f0fdfa;">
+                  <th align="left" style="padding:10px 8px; color:#0f766e;">Medicine</th>
+                  <th align="left" style="padding:10px 8px; color:#0f766e;">Dosage</th>
+                  <th align="left" style="padding:10px 8px; color:#0f766e;">Frequency</th>
+                  <th align="left" style="padding:10px 8px; color:#0f766e;">Duration</th>
+                </tr>
+                <% medications.forEach(function (med) { %>
+                <tr>
+                  <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;">
+                    <strong style="color:#111827;"><%= med.name %></strong>
+                    <% if (med.instructions) { %>
+                      <br><span style="font-size:12px; color:#6b7280;"><%= med.instructions %></span>
+                    <% } %>
+                  </td>
+                  <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= med.dosage %></td>
+                  <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= med.frequency %></td>
+                  <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= med.duration %></td>
+                </tr>
+                <% }); %>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Doctor's Notes -->
+          <% if (locals.notes) { %>
+          <tr>
+            <td style="padding:16px 30px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffbeb; border-left:4px solid #f59e0b;">
+                <tr>
+                  <td style="padding:12px 16px; font-size:14px; color:#92400e;">
+                    <strong>Doctor's Notes</strong><br>
+                    <%= notes %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Follow-up -->
+          <% if (locals.followUpDate) { %>
+          <tr>
+            <td style="padding:16px 30px 0; font-size:14px;">
+              <strong>Follow-up date:</strong> <%= followUpDate %>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Button -->
+          <% if (locals.viewUrl) { %>
+          <tr>
+            <td align="center" style="padding:24px 30px 8px;">
+              <a href="<%= viewUrl %>" target="_blank"
+                 style="display:inline-block; background-color:#0f766e; color:#ffffff; text-decoration:none; font-size:14px; font-weight:600; padding:12px 28px; border-radius:6px;">
+                View / Download Prescription
+              </a>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Warning -->
+          <tr>
+            <td style="padding:16px 30px 24px; font-size:12px; color:#6b7280;">
+              Take medicines exactly as prescribed. If you experience side effects or have any questions,
+              contact your doctor or pharmacist. In an emergency, seek immediate medical care.
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f9fafb; border-top:1px solid #e5e7eb; padding:20px 30px; font-size:12px; color:#6b7280;">
+              <p style="margin:0;"><strong>PH Healthcare Services</strong></p>
+              <% if (locals.clinicAddress) { %><p style="margin:0;"><%= clinicAddress %></p><% } %>
+              <p style="margin:0;">
+                <% if (locals.clinicPhone) { %><%= clinicPhone %><% } %>
+                <% if (locals.clinicPhone && locals.clinicEmail) { %> &middot; <% } %>
+                <% if (locals.clinicEmail) { %><a href="mailto:<%= clinicEmail %>" style="color:#0f766e;"><%= clinicEmail %></a><% } %>
+              </p>
+              <p style="margin:10px 0 0; font-size:11px; color:#9ca3af;">
+                This email contains confidential health information intended only for <%= patientName %>.
+                If you received it by mistake, please delete it.
+              </p>
+              <p style="margin:6px 0 0; font-size:11px; color:#9ca3af;">&copy; <%= new Date().getFullYear() %> PH Healthcare Services</p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

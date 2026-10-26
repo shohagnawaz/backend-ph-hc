@@ -1,0 +1,249 @@
+<%
+  const cur = locals.currency || '৳';
+  const fmt = (n) => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const statusStyles = {
+    PAID:    { bg: '#dcfce7', color: '#166534', label: 'Paid' },
+    PENDING: { bg: '#fef3c7', color: '#92400e', label: 'Pending' },
+    OVERDUE: { bg: '#fee2e2', color: '#991b1b', label: 'Overdue' },
+    FAILED:  { bg: '#fee2e2', color: '#991b1b', label: 'Failed' },
+  };
+  const st = statusStyles[(locals.status || 'PENDING').toUpperCase()] || statusStyles.PENDING;
+
+  const subtotal = items.reduce((sum, i) => sum + Number(i.quantity) * Number(i.unitPrice), 0);
+  const discountAmt = Number(locals.discount || 0);
+  const taxAmt = Number(locals.tax || 0);
+  const total = subtotal - discountAmt + taxAmt;
+%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Invoice #<%= invoiceNumber %></title>
+</head>
+<body style="margin:0; padding:0; background-color:#f5f5f5; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height:1.6; color:#333333;">
+
+  <!-- Preheader (hidden preview text) -->
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">
+    Invoice #<%= invoiceNumber %> - <%= cur %><%= fmt(total) %> (<%= st.label %>)
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f5f5f5; padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <!-- Container -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:8px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color:#0f766e; padding:28px 30px;">
+              <h1 style="margin:0 0 4px; font-size:26px; color:#ffffff;">Invoice</h1>
+              <p style="margin:0; font-size:13px; color:#ccfbf1;">PH Healthcare Services - Your Health, Our Priority</p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding:28px 30px 10px; font-size:15px;">
+              <p style="margin:0;">Dear <strong><%= patientName %></strong>,</p>
+              <p style="margin:10px 0 0;">
+                <% if (st.label === 'Paid') { %>
+                  Thank you! We have received your payment. Here is your receipt.
+                <% } else { %>
+                  Please find your invoice details below.
+                <% } %>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Invoice Info -->
+          <tr>
+            <td style="padding:16px 30px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb; border:1px solid #e5e7eb; border-radius:6px;">
+                <tr>
+                  <td style="padding:16px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:14px;">
+                      <tr>
+                        <td width="40%" style="padding:6px 0; color:#6b7280;">Invoice No.</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;">#<%= invoiceNumber %></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Invoice Date</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= invoiceDate %></td>
+                      </tr>
+                      <% if (locals.dueDate) { %>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Due Date</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= dueDate %></td>
+                      </tr>
+                      <% } %>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Billed To</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;"><%= patientName %></td>
+                      </tr>
+                      <% if (locals.doctorName) { %>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Doctor</td>
+                        <td style="padding:6px 0; font-weight:600; color:#111827;">Dr. <%= doctorName %></td>
+                      </tr>
+                      <% } %>
+                      <tr>
+                        <td style="padding:6px 0; color:#6b7280;">Status</td>
+                        <td style="padding:6px 0;">
+                          <span style="display:inline-block; padding:2px 12px; border-radius:12px; font-size:12px; font-weight:600; background-color:<%= st.bg %>; color:<%= st.color %>;">
+                            <%= st.label %>
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Items -->
+          <tr>
+            <td style="padding:10px 30px;">
+              <h2 style="margin:0 0 10px; padding-bottom:6px; font-size:16px; color:#0f766e; border-bottom:2px solid #0f766e;">Billing Details</h2>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; font-size:13px;">
+                <tr style="background-color:#f0fdfa;">
+                  <th align="left" style="padding:10px 8px; color:#0f766e;">Description</th>
+                  <th align="center" style="padding:10px 8px; color:#0f766e;">Qty</th>
+                  <th align="right" style="padding:10px 8px; color:#0f766e;">Unit Price</th>
+                  <th align="right" style="padding:10px 8px; color:#0f766e;">Amount</th>
+                </tr>
+                <% items.forEach(function (item) { %>
+                <tr>
+                  <td style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;">
+                    <strong style="color:#111827;"><%= item.description %></strong>
+                    <% if (item.note) { %>
+                      <br><span style="font-size:12px; color:#6b7280;"><%= item.note %></span>
+                    <% } %>
+                  </td>
+                  <td align="center" style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= item.quantity %></td>
+                  <td align="right" style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= cur %><%= fmt(item.unitPrice) %></td>
+                  <td align="right" style="padding:10px 8px; border-bottom:1px solid #e5e7eb; vertical-align:top;"><%= cur %><%= fmt(item.quantity * item.unitPrice) %></td>
+                </tr>
+                <% }); %>
+              </table>
+
+              <!-- Totals -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px; font-size:14px;">
+                <tr>
+                  <td align="right" style="padding:4px 8px; color:#6b7280;">Subtotal</td>
+                  <td align="right" width="130" style="padding:4px 8px;"><%= cur %><%= fmt(subtotal) %></td>
+                </tr>
+                <% if (discountAmt > 0) { %>
+                <tr>
+                  <td align="right" style="padding:4px 8px; color:#6b7280;">Discount</td>
+                  <td align="right" style="padding:4px 8px; color:#166534;">- <%= cur %><%= fmt(discountAmt) %></td>
+                </tr>
+                <% } %>
+                <% if (taxAmt > 0) { %>
+                <tr>
+                  <td align="right" style="padding:4px 8px; color:#6b7280;">Tax / VAT</td>
+                  <td align="right" style="padding:4px 8px;"><%= cur %><%= fmt(taxAmt) %></td>
+                </tr>
+                <% } %>
+                <tr>
+                  <td align="right" style="padding:10px 8px; font-size:16px; font-weight:700; color:#111827; border-top:2px solid #0f766e;">
+                    <%= st.label === 'Paid' ? 'Total Paid' : 'Total Due' %>
+                  </td>
+                  <td align="right" style="padding:10px 8px; font-size:16px; font-weight:700; color:#0f766e; border-top:2px solid #0f766e;">
+                    <%= cur %><%= fmt(total) %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Payment Details (when paid) -->
+          <% if (st.label === 'Paid' && (locals.paymentMethod || locals.transactionId)) { %>
+          <tr>
+            <td style="padding:16px 30px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0fdf4; border-left:4px solid #22c55e;">
+                <tr>
+                  <td style="padding:12px 16px; font-size:13px; color:#166534;">
+                    <strong>Payment Received</strong><br>
+                    <% if (locals.paymentMethod) { %>Method: <%= paymentMethod %><br><% } %>
+                    <% if (locals.transactionId) { %>Transaction ID: <%= transactionId %><br><% } %>
+                    <% if (locals.paidAt) { %>Paid on: <%= paidAt %><% } %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Notes -->
+          <% if (locals.notes) { %>
+          <tr>
+            <td style="padding:16px 30px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fffbeb; border-left:4px solid #f59e0b;">
+                <tr>
+                  <td style="padding:12px 16px; font-size:14px; color:#92400e;">
+                    <strong>Note</strong><br>
+                    <%= notes %>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Button -->
+          <% if (locals.paymentUrl || locals.invoiceUrl) { %>
+          <tr>
+            <td align="center" style="padding:24px 30px 8px;">
+              <% if (st.label !== 'Paid' && locals.paymentUrl) { %>
+                <a href="<%= paymentUrl %>" target="_blank"
+                   style="display:inline-block; background-color:#0f766e; color:#ffffff; text-decoration:none; font-size:14px; font-weight:600; padding:12px 28px; border-radius:6px;">
+                  Pay Now
+                </a>
+              <% } else if (locals.invoiceUrl) { %>
+                <a href="<%= invoiceUrl %>" target="_blank"
+                   style="display:inline-block; background-color:#0f766e; color:#ffffff; text-decoration:none; font-size:14px; font-weight:600; padding:12px 28px; border-radius:6px;">
+                  Download Invoice
+                </a>
+              <% } %>
+            </td>
+          </tr>
+          <% } %>
+
+          <!-- Help text -->
+          <tr>
+            <td style="padding:16px 30px 24px; font-size:12px; color:#6b7280;">
+              If you have any questions about this invoice, please contact our billing team.
+              Keep this email for your records.
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f9fafb; border-top:1px solid #e5e7eb; padding:20px 30px; font-size:12px; color:#6b7280;">
+              <p style="margin:0;"><strong>PH Healthcare Services</strong></p>
+              <% if (locals.clinicAddress) { %><p style="margin:0;"><%= clinicAddress %></p><% } %>
+              <p style="margin:0;">
+                <% if (locals.clinicPhone) { %><%= clinicPhone %><% } %>
+                <% if (locals.clinicPhone && locals.clinicEmail) { %> &middot; <% } %>
+                <% if (locals.clinicEmail) { %><a href="mailto:<%= clinicEmail %>" style="color:#0f766e;"><%= clinicEmail %></a><% } %>
+              </p>
+              <p style="margin:10px 0 0; font-size:11px; color:#9ca3af;">
+                This email was sent to <%= patientName %>. If you received it by mistake, please delete it.
+              </p>
+              <p style="margin:6px 0 0; font-size:11px; color:#9ca3af;">&copy; <%= new Date().getFullYear() %> PH Healthcare Services</p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
