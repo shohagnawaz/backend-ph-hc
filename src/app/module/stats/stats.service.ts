@@ -3,6 +3,7 @@ import { PaymentStatus, Role } from "../../../generated/prisma/enums";
 import AppError from "../../errorHelpers/AppError";
 import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
+import { count } from "node:console";
 
 const getDashboardStatsData = async (user: IRequestUser) => {
     let statsData;
@@ -15,10 +16,10 @@ const getDashboardStatsData = async (user: IRequestUser) => {
             statsData = getAdminStatsData();
             break;
         case Role.DOCTOR:
-            statsData = getDoctorStatsData();
+            statsData = getDoctorStatsData(user);
             break;
         case Role.PATIENT:
-            statsData = getPatientStatsData();
+            statsData = getPatientStatsData(user);
         default:
             throw new AppError(status.BAD_REQUEST, "Invalid user role")
     }
@@ -48,6 +49,9 @@ const getSuperAdminStatsData = async () => {
         }
     });
 
+    const pieChartData = await getPieChartData();
+    const barChartData = await getBarChartData();
+
     return {
         appointmentCount,
         doctorCount,
@@ -56,7 +60,9 @@ const getSuperAdminStatsData = async () => {
         superAdminCount,
         paymentCount,
         userCount,
-        totalRevenue: totalRevenue._sum.amount || 0
+        totalRevenue: totalRevenue._sum.amount || 0,
+        pieChartData,
+        barChartData
     }
 };
 
@@ -74,6 +80,9 @@ const getAdminStatsData = async () => {
             status: PaymentStatus.PAID
         }
     });
+
+    const pieChartData = await getPieChartData();
+    const barChartData = await getBarChartData();
 
     return {
         appointmentCount,
@@ -193,6 +202,38 @@ const getPatientStatsData = async (user: IRequestUser) => {
         reviewCount,
         appointmentStatusDistribution: formattedAppointmentStatusDistribution
     }
+};
+
+const getPieChartData = async () => {
+    const appointmentStatusDistribution = await prisma.appointment.groupBy({
+        by: ["status"],
+        _count: {
+            id: true
+        }
+    });
+
+    const formattedAppointmentStatusDistribution = appointmentStatusDistribution.map(({_count, status}) => ({
+        status,
+        count: _count.id
+    }));
+
+    return formattedAppointmentStatusDistribution;
+};
+
+const getBarChartData = async () => {
+    interface AppointmentCountByMonth {
+        month: Date;
+        count: bigint
+    }
+    const appointmentCountByMonth : AppointmentCountByMonth[] = await prisma.$queryRaw`
+        SELECT DATE_TRUNC("month", "createdAt") AS month, 
+        CAST(COUNT(*) AS INTEGER) AS count
+        FROM "appointments" 
+        GROUP BY month
+        ORDER BY month ASC;
+    `
+
+    return appointmentCountByMonth;
 };
 
 export const StatsService = {
