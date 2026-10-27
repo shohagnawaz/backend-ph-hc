@@ -34,4 +34,4 @@ router.delete("/:id",
     ReviewController.deleteReview
 );
 
-export const reviewRouter = router;
+export const ReviewRoutes = router;

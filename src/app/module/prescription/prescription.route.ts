@@ -33,5 +33,5 @@ router.delete("/:id",
     PrescriptionController.deletePrescription
 );
 
-export const prescriptionRouter = router;
+export const PrescriptionRouter = router;
 
