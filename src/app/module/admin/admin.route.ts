@@ -24,11 +24,13 @@ router.delete("/", checkAuth(Role.SUPER_ADMIN),
     AdminController.deleteAdmin
 );
 
-router.patch("/change-user-status/:id", 
+router.patch("/change-user-status",
+    checkAuth(Role.SUPER_ADMIN, Role.ADMIN), 
     AdminController.changeUserStatus
 );
 
-router.patch("/change-user-role/:id",
+router.patch("/change-user-role",
+    checkAuth(Role.SUPER_ADMIN),
     AdminController.changeUserRole
 );
 
